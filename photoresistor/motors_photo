@@ -1,0 +1,109 @@
+#include "project.h"
+
+#define SERVO_0_DEG     1500u
+#define SERVO_180_DEG   1700u
+#define SERVO_STEP      50u
+#define SERVO_DELAY     10u
+#define SEUIL_LUMIERE   1000u
+
+/* --------------------------------------------------------- */
+/*  Fonction générique aller-retour                          */
+/* --------------------------------------------------------- */
+void clickclick(uint8 motor)
+{
+    uint16 pos;
+    
+    for(pos = SERVO_180_DEG; pos >= SERVO_0_DEG; pos -= SERVO_STEP)
+    {
+        if(motor == 1u) PWM_1_WriteCompare1(pos);
+        else            PWM_2_WriteCompare1(pos);
+        CyDelay(SERVO_DELAY);
+    }
+    for(pos = SERVO_0_DEG; pos <= SERVO_180_DEG; pos += SERVO_STEP)
+    {
+        if(motor == 1u) PWM_1_WriteCompare1(pos);
+        else            PWM_2_WriteCompare1(pos);
+        CyDelay(SERVO_DELAY);
+    }
+}
+
+/* --------------------------------------------------------- */
+/*  Gestion switchs                                          */
+/* --------------------------------------------------------- */
+void gestionMoteurs(uint8 sw4, uint8 sw4Last,
+                    uint8 sw3, uint8 sw3Last)
+{
+    if(sw4Last == 1u && sw4 == 0u) clickclick(1u);
+    if(sw3Last == 1u && sw3 == 0u) clickclick(2u);
+}
+
+/* --------------------------------------------------------- */
+/*  Gestion photorésistances — 1 seul click par cycle        */
+/* --------------------------------------------------------- */
+void gestionPhoto(uint8 *lastPhoto1, uint8 *lastPhoto2)
+{
+    int16 val1;
+    int16 val2;
+    uint8 photo1Sombre;
+    uint8 photo2Sombre;
+    
+    ADC_SAR_Seq_IsEndConversion(ADC_SAR_Seq_WAIT_FOR_RESULT);
+    
+    val1 = ADC_SAR_Seq_GetResult16(0u); /* Photo_1 → Moteur 1 */
+    val2 = ADC_SAR_Seq_GetResult16(1u); /* Photo_2 → Moteur 2 */
+    
+    /* 1 = sombre, 0 = lumineux */
+    photo1Sombre = (val1 < SEUIL_LUMIERE) ? 1u : 0u;
+    photo2Sombre = (val2 < SEUIL_LUMIERE) ? 1u : 0u;
+    
+    /* Front montant obscurité : lumineux → sombre = 1 click */
+    if(*lastPhoto1 == 0u && photo1Sombre == 1u)
+    {
+        clickclick(1u);  /* Photo_1 → Moteur 1 uniquement */
+    }
+    
+    if(*lastPhoto2 == 0u && photo2Sombre == 1u)
+    {
+        clickclick(2u);  /* Photo_2 → Moteur 2 uniquement */
+    }
+    
+    /* Sauvegarde l'état */
+    *lastPhoto1 = photo1Sombre;
+    *lastPhoto2 = photo2Sombre;
+}
+
+/* --------------------------------------------------------- */
+/*  Main                                                     */
+/* --------------------------------------------------------- */
+int main(void)
+{
+    CyGlobalIntEnable;
+    
+    PWM_1_Start();
+    PWM_2_Start();
+    ADC_SAR_Seq_Start();
+    ADC_SAR_Seq_StartConvert();
+    
+    PWM_1_WriteCompare1(SERVO_180_DEG);
+    PWM_2_WriteCompare1(SERVO_0_DEG);
+    
+    uint8 lastState_SW4  = 1u;
+    uint8 lastState_SW3  = 1u;
+    uint8 lastPhoto1     = 0u;  /* 0 = lumineux au départ */
+    uint8 lastPhoto2     = 0u;
+    
+    for(;;)
+    {
+        uint8 currentSW4 = SW4_Read();
+        uint8 currentSW3 = SW3_Read();
+        
+        gestionMoteurs(currentSW4, lastState_SW4,
+                       currentSW3, lastState_SW3);
+        
+        gestionPhoto(&lastPhoto1, &lastPhoto2);
+        
+        lastState_SW4 = currentSW4;
+        lastState_SW3 = currentSW3;
+        CyDelay(50u);
+    }
+}
