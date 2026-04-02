@@ -1,0 +1,70 @@
+#include "project.h"
+
+#define SERVO_0_DEG    1500u
+#define SERVO_180_DEG  1700u
+#define SERVO_STEP     50u
+#define SERVO_DELAY    10u
+
+/* Fonction générique qui prend le numéro du PWM en paramètre */
+void clickclick(uint8 motor)
+{
+    uint16 pos;
+    
+    /* 180° → 0° */
+    for(pos = SERVO_180_DEG; pos >= SERVO_0_DEG; pos -= SERVO_STEP)
+    {
+        if(motor == 1u) PWM_1_WriteCompare1(pos);
+        else            PWM_2_WriteCompare1(pos);
+        CyDelay(SERVO_DELAY);
+    }
+    /* 0° → 180° */
+    for(pos = SERVO_0_DEG; pos <= SERVO_180_DEG; pos += SERVO_STEP)
+    {
+        if(motor == 1u) PWM_1_WriteCompare1(pos);
+        else            PWM_2_WriteCompare1(pos);
+        CyDelay(SERVO_DELAY);
+    }
+}
+
+/* Fonction dédiée à la gestion des actions moteur */
+void gestionMoteurs(uint8 sw4, uint8 sw4Last, uint8 sw3, uint8 sw3Last)
+{
+    /* SW4 → Moteur 1 */
+    if(sw4Last == 1u && sw4 == 0u)
+    {
+        clickclick(1u);
+    }
+    
+    /* SW3 → Moteur 2 */
+    if(sw3Last == 1u && sw3 == 0u)
+    {
+        clickclick(2u);
+    }
+}
+
+int main(void)
+{
+    CyGlobalIntEnable;
+    
+    PWM_1_Start();
+    PWM_2_Start();
+    
+    PWM_1_WriteCompare1(SERVO_180_DEG);
+    PWM_2_WriteCompare1(SERVO_0_DEG);
+    
+    uint8 lastState_SW4 = 1u;
+    uint8 lastState_SW3 = 1u;
+    
+    for(;;)
+    {
+        uint8 currentSW4 = SW4_Read();
+        uint8 currentSW3 = SW3_Read();
+        
+        gestionMoteurs(currentSW4, lastState_SW4,
+                       currentSW3, lastState_SW3);
+        
+        lastState_SW4 = currentSW4;
+        lastState_SW3 = currentSW3;
+        CyDelay(50u);
+    }
+}
