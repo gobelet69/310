@@ -18,3 +18,5 @@ Ce labo permet à l'automate d'agir physiquement et de communiquer.
 
 * **Servomoteurs :** Contrôle physique des frappes sur le clavier en générant des signaux PWM.
 * **Port Série (UART) :** Communication bidirectionnelle avec le PC (envoi d'états et réception des commandes comme "jump" ou "duck" via interruption).
+
+![](2026-04-25-22-33-58.png)

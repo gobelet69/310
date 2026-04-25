@@ -2,7 +2,7 @@
 - [x] **SW1** : Activer le servomoteur de la barre d'espace (saut) lors de l'appui.
 - [x] **SW2** : Activer le servomoteur de la flèche du bas (baisse) lors de l'appui.
 - [x] **SW3** : Réinitialiser le score à zéro lors de l'appui.
-- [ ] **Clavier du microcontrôleur** : Configurer deux touches pour reproduire les mêmes comportements que SW1 et SW2.
+- [x] **Clavier du microcontrôleur** : Configurer deux touches pour reproduire les mêmes comportements que SW1 et SW2.
 
 ### Logique de Jeu et Score
 - [x] **Démarrage du score** : L'incrémentation du score démarre au premier appui sur la barre d'espace (après un reset à zéro).
@@ -39,4 +39,4 @@
 - [x] also return reset cmd on computer
 - [ ] easter egg
 - [x] 3 flash led on reset
-- [ ] 3 beep on reset
+- [x] 3 beep on reset
